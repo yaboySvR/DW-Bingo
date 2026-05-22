@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dandy's World Bingo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root { --cell: 118px; }
+
+  body {
+    background: #09051a;
+    background-image: radial-gradient(ellipse at 50% 0%, #1e0a40 0%, #09051a 65%);
+    min-height: 100vh;
+    font-family: 'Nunito', sans-serif;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+
+  /* ── Start screen ── */
+  #start-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    min-height: 80vh;
+  }
+
+  .big-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    text-align: center;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #ff6ec7 0%, #bf5fff 40%, #5ec4ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 24px rgba(180,80,255,.45));
+    letter-spacing: 2px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.25rem;
+    letter-spacing: 1px;
+    padding: 14px 36px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, opacity .15s;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-3px); }
+  .btn:active:not(:disabled) { transform: translateY(0); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  .btn-new-start {
+    background: linear-gradient(135deg, #bf5fff, #6a2fff);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(160,60,255,.5);
+    font-size: 1.5rem;
+    padding: 18px 52px;
+  }
+  .btn-new-start:hover:not(:disabled) { box-shadow: 0 8px 30px rgba(160,60,255,.7); }
+
+  .btn-new { background: linear-gradient(135deg, #ff6ec7, #bf5fff); color: #fff; box-shadow: 0 4px 16px rgba(255,100,200,.4); }
+  .btn-remove { background: linear-gradient(135deg, #ff5252, #ff9b44); color: #fff; box-shadow: 0 4px 16px rgba(255,80,80,.4); }
+
+  /* ── Game screen ── */
+  #game-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 660px;
+    justify-content: center;
+  }
+
+  .inline-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    background: linear-gradient(135deg, #ff6ec7 0%, #bf5fff 50%, #5ec4ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 1px;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ── Card ── */
+  .bingo-card {
+    background: #160b30;
+    border-radius: 18px;
+    padding: 10px;
+    border: 2px solid rgba(180,80,255,.35);
+    box-shadow: 0 0 50px rgba(140,50,255,.25), inset 0 0 30px rgba(0,0,0,.4);
+  }
+
+  .bingo-header {
+    display: grid;
+    grid-template-columns: repeat(5, var(--cell));
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .bingo-letter {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.9rem;
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 8px;
+  }
+  .bingo-letter:nth-child(1) { color: #ff6ec7; text-shadow: 0 0 12px rgba(255,110,200,.6); }
+  .bingo-letter:nth-child(2) { color: #ffb344; text-shadow: 0 0 12px rgba(255,179,68,.6); }
+  .bingo-letter:nth-child(3) { color: #ffe144; text-shadow: 0 0 12px rgba(255,225,68,.6); }
+  .bingo-letter:nth-child(4) { color: #5eff9e; text-shadow: 0 0 12px rgba(94,255,158,.6); }
+  .bingo-letter:nth-child(5) { color: #5ec4ff; text-shadow: 0 0 12px rgba(94,196,255,.6); }
+
+  .bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, var(--cell));
+    gap: 5px;
+  }
+
+  /* ── Cell ── */
+  .cell {
+    width: var(--cell);
+    height: var(--cell);
+    background: #f4eeff;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+    padding: 6px 4px 5px;
+    user-select: none;
+  }
+  .cell:hover { transform: scale(1.06); border-color: #bf5fff; box-shadow: 0 4px 16px rgba(180,80,255,.45); z-index: 1; }
+
+  .cell img {
+    width: calc(var(--cell) * .57);
+    height: calc(var(--cell) * .57);
+    object-fit: contain;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  .cell-name {
+    font-size: .6rem;
+    font-weight: 700;
+    text-align: center;
+    color: #26134a;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* ── Completed ── */
+  .cell.completed { border-color: #9b44ff; }
+  .cell.completed::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    background: rgba(80, 20, 160, .84);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--cell) * .38);
+    color: #fff;
+    font-weight: 900;
+    text-shadow: 0 2px 10px rgba(0,0,0,.5);
+    border-radius: 8px;
+  }
+
+  /* ── Lottery states ── */
+  .cell.lottery-pool {
+    animation: pool-pulse .55s ease-in-out infinite alternate;
+  }
+  @keyframes pool-pulse {
+    from { box-shadow: 0 0 6px rgba(255,215,0,.5);  border-color: rgba(255,215,0,.5); }
+    to   { box-shadow: 0 0 22px rgba(255,215,0,.9); border-color: rgba(255,215,0,.9); }
+  }
+
+  .cell.completed.lottery-cursor { animation: none; }
+  .cell.completed.lottery-cursor::after {
+    content: '?';
+    background: rgba(200,130,0,.85);
+    box-shadow: inset 0 0 20px rgba(255,200,0,.4);
+  }
+  .cell.lottery-cursor {
+    transform: scale(1.1);
+    box-shadow: 0 0 32px rgba(255,200,0,1), 0 0 60px rgba(255,140,0,.5);
+    border-color: #ffd700;
+    z-index: 2;
+  }
+
+  @keyframes winner-flash {
+    0%,100% { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,200,0,.9); }
+    50%      { transform: scale(1.18); box-shadow: 0 0 60px #fff, 0 0 90px rgba(255,200,0,.6); }
+  }
+  .cell.lottery-winner { animation: winner-flash .18s ease-in-out 4; }
+  .cell.completed.lottery-winner::after { content: '✗'; background: rgba(220,40,40,.88); }
+
+  /* ── Bottom bar ── */
+  .bottom-bar { width: 100%; max-width: 660px; display: flex; justify-content: center; }
+
+  /* ── Bingo line ── */
+  .cell.bingo-line {
+    border-color: #ffd700 !important;
+    animation: bingo-glow 1s ease-in-out infinite alternate !important;
+    z-index: 1;
+  }
+  .cell.bingo-line.completed::after {
+    background: rgba(50, 15, 110, .84);
+    box-shadow: inset 0 0 20px rgba(255,215,0,.3);
+  }
+  @keyframes bingo-glow {
+    from { box-shadow: 0 0 12px rgba(255,215,0,.6), 0 0 24px rgba(255,140,0,.3); }
+    to   { box-shadow: 0 0 28px rgba(255,215,0,1),  0 0 55px rgba(255,140,0,.6); }
+  }
+
+  /* ── Bingo win reveal + flash ── */
+  .cell.bingo-line.bingo-reveal {
+    animation: bingo-pop .38s cubic-bezier(.175,.885,.32,1.275) forwards !important;
+    box-shadow: 0 0 28px gold, 0 0 55px rgba(255,150,0,.5);
+    border-color: #ffd700;
+    z-index: 2;
+  }
+  @keyframes bingo-pop {
+    0%   { transform: scale(1); }
+    55%  { transform: scale(1.24); }
+    100% { transform: scale(1.09); }
+  }
+  .cell.bingo-flash {
+    animation: bingo-flash-anim .22s ease-in-out 5 !important;
+    z-index: 2;
+  }
+  @keyframes bingo-flash-anim {
+    0%,100% { transform: scale(1.09); box-shadow: 0 0 22px rgba(255,215,0,.8); }
+    50%      { transform: scale(1.2);  box-shadow: 0 0 60px #fff, 0 0 90px gold; }
+  }
+
+  /* ── Win overlay ── */
+  #win-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 1, 16, .92);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    z-index: 300;
+  }
+  #win-overlay.show { display: flex; }
+
+  .win-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(5rem, 22vw, 10rem);
+    background: linear-gradient(135deg, #ff6ec7 0%, #ffe144 33%, #5ec4ff 66%, #ff6ec7 100%);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: rainbow-shift 2s ease infinite, bounce-in .55s cubic-bezier(.175,.885,.32,1.275) both;
+    filter: drop-shadow(0 0 30px rgba(255,200,0,.55));
+    letter-spacing: 4px;
+  }
+  @keyframes rainbow-shift {
+    0%,100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+  @keyframes bounce-in {
+    from { transform: scale(0) rotate(-12deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0deg);  opacity: 1; }
+  }
+  .win-sub {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.65);
+    letter-spacing: 1px;
+  }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30,12,60,.96);
+    color: #fff;
+    padding: 11px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: .95rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    border: 1px solid rgba(180,80,255,.4);
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 660px) {
+    :root { --cell: calc((100vw - 72px) / 5); }
+    .bingo-letter { font-size: clamp(.9rem, 3.5vw, 1.9rem); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Start screen ── -->
+<div id="start-screen">
+  <div class="big-title">DANDY'S WORLD<br>BINGO</div>
+  <button class="btn btn-new-start" onclick="generateCard()">NEW BINGO CARD</button>
+</div>
+
+<!-- ── Game screen ── -->
+<div id="game-screen">
+  <div class="top-bar">
+    <button class="btn btn-new" id="btn-new" onclick="generateCard()">New Card</button>
+  </div>
+
+  <div class="bingo-card">
+    <div class="bingo-header">
+      <div class="bingo-letter">B</div>
+      <div class="bingo-letter">I</div>
+      <div class="bingo-letter">N</div>
+      <div class="bingo-letter">G</div>
+      <div class="bingo-letter">O</div>
+    </div>
+    <div class="bingo-grid" id="bingo-grid"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn btn-remove" id="btn-remove" onclick="startRemove()">Remove 1 Item</button>
+  </div>
+</div>
+
+<div id="win-overlay">
+  <div class="win-title">BINGO!</div>
+  <button class="btn btn-new-start" onclick="hideWinAndNewCard()">Play Again</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const ITEMS = [
+  { name: "Gumballs",                img: "images/Gumballs.png" },
+  { name: "Chocolate",               img: "images/Chocolate.png" },
+  { name: "Stopwatch",               img: "images/Stopwatch.png" },
+  { name: "Stamina Candy",           img: "images/Stamina_Candy.png" },
+  { name: "Stealth Candy",           img: "images/Stealth_Candy.png" },
+  { name: "Pop",                     img: "images/Pop.png" },
+  { name: "Speed Candy",             img: "images/Speed_Candy.png" },
+  { name: "Protein Bar",             img: "images/Protein_Bar.png" },
+  { name: "Instructions",            img: "images/Instructions.png" },
+  { name: "Extraction Speed Candy",  img: "images/Extraction_Speed_Candy.png" },
+  { name: "Skill Check Candy",       img: "images/Skill_Check_Candy.png" },
+  { name: "Jumper Cable",            img: "images/Jumper_Cable.png" },
+  { name: "Bandage",                 img: "images/Bandage.png" },
+  { name: "Air Horn",                img: "images/Air_Horn.png" },
+  { name: "Jawbreaker",              img: "images/Jawbreaker.png" },
+  { name: "Bottle o' Pop",           img: "images/Bottle_o'_Pop.png" },
+  { name: "Health Kit",              img: "images/Health_Kit.png" },
+  { name: "Box o' Chocolates",       img: "images/Box_o'_Chocolates.png" },
+  { name: "Eject Button",            img: "images/Eject_Button.png" },
+  { name: "Smoke Bomb",              img: "images/Smoke_Bomb.png" },
+  { name: "Valve",                   img: "images/Valve.png" },
+];
+
+const TWISTEDS = [
+  { name: "Twisted Blot",           img: "twsteds/Blot.png" },
+  { name: "Twisted Boxten",         img: "twsteds/Boxten.png" },
+  { name: "Twisted Brightney",      img: "twsteds/Brightney.png" },
+  { name: "Twisted Brusha",         img: "twsteds/Brusha.png" },
+  { name: "Twisted Connie",         img: "twsteds/Connie.png" },
+  { name: "Twisted Cosmo",          img: "twsteds/Cosmo.png" },
+  { name: "Twisted Finn",           img: "twsteds/Finn.png" },
+  { name: "Twisted Flutter",        img: "twsteds/Flutter.png" },
+  { name: "Twisted Gigi",           img: "twsteds/Gigi.png" },
+  { name: "Twisted Glisten",        img: "twsteds/Glisten.png" },
+  { name: "Twisted Goob",           img: "twsteds/Goob.png" },
+  { name: "Twisted Looey",          img: "twsteds/Looey.png" },
+  { name: "Twisted Poppy",          img: "twsteds/Poppy.png" },
+  { name: "Twisted Razzle & Dazzle",img: "twsteds/Razzle_Dazzle.png" },
+  { name: "Twisted Rodger",         img: "twsteds/Rodger.png" },
+  { name: "Twisted Scraps",         img: "twsteds/Scraps.png" },
+  { name: "Twisted Shrimpo",        img: "twsteds/Shrimpo.png" },
+  { name: "Twisted Squirm",         img: "twsteds/Squirm.png" },
+  { name: "Twisted Teagan",         img: "twsteds/Teagan.png" },
+  { name: "Twisted Tisha",          img: "twsteds/Tisha.png" },
+  { name: "Twisted Toodles",        img: "twsteds/Toodles.png" },
+  { name: "Twisted Yatta",          img: "twsteds/Yatta.png" },
+  { name: "Twisted Astro",          img: "twsteds/Astro.png" },
+  { name: "Twisted Bassie",         img: "twsteds/Bassie.png" },
+  { name: "Twisted Bobette",        img: "twsteds/Bobette.png" },
+  { name: "Twisted Gourdy",         img: "twsteds/Gourdy.png" },
+  { name: "Twisted Pebble",         img: "twsteds/Pebble.png" },
+  { name: "Twisted Shelly",         img: "twsteds/Shelly.png" },
+  { name: "Twisted Sprout",         img: "twsteds/Sprout.png" },
+  { name: "Twisted Vee",            img: "twsteds/Vee.png" },
+  { name: "Twisted Cocoa",          img: "twsteds/Cocoa.png" },
+  { name: "Twisted Eggson",         img: "twsteds/Eggson.png" },
+  { name: "Twisted Flyte",          img: "twsteds/Flyte.png" },
+  { name: "Twisted Eclipse",        img: "twsteds/Eclipse.png" },
+  { name: "Twisted Ribecca",        img: "twsteds/Ribecca.png" },
+  { name: "Twisted Soulvester",     img: "twsteds/Soulvester.png" },
+  { name: "Twisted Coal",           img: "twsteds/Coal.png" },
+  { name: "Twisted Ginger",         img: "twsteds/Ginger.png" },
+  { name: "Twisted Rudie",          img: "twsteds/Rudie.png" },
+  { name: "Twisted Dandy",          img: "twsteds/Dandy.png" },
+  { name: "Twisted Dyle",           img: "twsteds/Dyle.png" },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let animating = false;
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTick(progress) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.value = 1100 - progress * 600;
+    gain.gain.setValueAtTime(0.07, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.055);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.055);
+  } catch(e) {}
+}
+
+function playVictory() {
+  try {
+    const ctx = getAudio();
+    const melody = [523, 659, 784, 1047, 1047];
+    melody.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.1;
+      const dur = i === 4 ? 0.9 : 0.22;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.22, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.start(t); osc.stop(t + dur);
+    });
+    [659, 784].forEach(freq => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + 0.42;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.1, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+      osc.start(t); osc.stop(t + 0.9);
+    });
+  } catch(e) {}
+}
+
+function playNote(freq) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.38);
+  } catch(e) {}
+}
+
+function animateBingo(lineCells) {
+  animating = true;
+  const NOTES = [523, 659, 784, 1047, 1319]; // C E G C E
+  let i = 0;
+
+  function revealNext() {
+    if (i >= lineCells.length) {
+      lineCells.forEach(c => c.classList.add('bingo-flash'));
+      playVictory();
+      setTimeout(() => {
+        lineCells.forEach(c => c.classList.remove('bingo-flash'));
+        animating = false;
+        showWin();
+      }, 1400);
+      return;
+    }
+    lineCells[i].classList.add('bingo-reveal');
+    playNote(NOTES[i]);
+    i++;
+    setTimeout(revealNext, 210);
+  }
+
+  setTimeout(revealNext, 150);
+}
+
+function playWinner() {
+  try {
+    const ctx = getAudio();
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.11;
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      osc.start(t);
+      osc.stop(t + 0.32);
+    });
+  } catch(e) {}
+}
+
+// ── Generate card ─────────────────────────────────────────────────────────
+function generateCard() {
+  if (animating) return;
+
+  const pool = shuffle([...ITEMS, ...TWISTEDS]);
+  const picks = pool.slice(0, 25);
+
+  const grid = document.getElementById('bingo-grid');
+  grid.innerHTML = '';
+
+  picks.forEach(entry => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.innerHTML = `
+      <img src="${entry.img}" alt="${entry.name}">
+      <div class="cell-name">${entry.name}</div>
+    `;
+    cell.addEventListener('click', () => toggleCell(cell));
+    grid.appendChild(cell);
+  });
+
+  document.getElementById('start-screen').style.display = 'none';
+  const gs = document.getElementById('game-screen');
+  gs.style.display = 'flex';
+}
+
+const WINNING_LINES = [
+  [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+  [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+  [0,6,12,18,24],[4,8,12,16,20]
+];
+
+// ── Toggle completion ─────────────────────────────────────────────────────
+function toggleCell(cell) {
+  if (animating) return;
+  if (cell.classList.contains('lottery-pool') || cell.classList.contains('lottery-cursor')) return;
+  cell.classList.toggle('completed');
+  if (cell.classList.contains('completed')) {
+    checkBingo();
+  } else {
+    document.querySelectorAll('.cell.bingo-line').forEach(c => c.classList.remove('bingo-line'));
+  }
+}
+
+function checkBingo() {
+  const cells = [...document.querySelectorAll('#bingo-grid .cell')];
+  const done = cells.map(c => c.classList.contains('completed'));
+  for (const line of WINNING_LINES) {
+    if (line.every(i => done[i])) {
+      const winCells = line.map(i => cells[i]);
+      winCells.forEach(c => c.classList.add('bingo-line'));
+      animateBingo(winCells);
+      return;
+    }
+  }
+}
+
+function showWin() {
+  const overlay = document.getElementById('win-overlay');
+  const title = overlay.querySelector('.win-title');
+  title.style.animation = 'none';
+  title.offsetHeight;
+  title.style.animation = '';
+  overlay.classList.add('show');
+}
+
+function hideWinAndNewCard() {
+  document.getElementById('win-overlay').classList.remove('show');
+  generateCard();
+}
+
+// ── Remove animation ──────────────────────────────────────────────────────
+function startRemove() {
+  if (animating) return;
+
+  const pool = [...document.querySelectorAll('.cell.completed')];
+
+  if (pool.length === 0) {
+    showToast('No completed slots to remove!');
+    return;
+  }
+
+  if (pool.length === 1) {
+    pool[0].classList.add('lottery-winner');
+    setTimeout(() => {
+      pool[0].classList.remove('lottery-winner', 'completed');
+    }, 800);
+    return;
+  }
+
+  animating = true;
+  document.getElementById('btn-remove').disabled = true;
+  document.getElementById('btn-new').disabled = true;
+
+  pool.forEach(c => c.classList.add('lottery-pool'));
+
+  let curIdx = -1;
+  let step = 0;
+  const totalSteps = 18 + Math.floor(Math.random() * 12);
+
+  function tick() {
+    if (curIdx !== -1) pool[curIdx].classList.remove('lottery-cursor');
+
+    let next;
+    do { next = Math.floor(Math.random() * pool.length); }
+    while (pool.length > 1 && next === curIdx);
+    curIdx = next;
+    pool[curIdx].classList.add('lottery-cursor');
+
+    const t = step / totalSteps;
+    playTick(t);
+    step++;
+
+    if (step < totalSteps) {
+      const delay = 55 + t * t * 260;
+      setTimeout(tick, delay);
+    } else {
+      const winner = pool[curIdx];
+      pool.forEach(c => c.classList.remove('lottery-pool', 'lottery-cursor'));
+      winner.classList.add('lottery-winner');
+      playWinner();
+      setTimeout(() => {
+        winner.classList.remove('lottery-winner', 'completed');
+        animating = false;
+        document.getElementById('btn-remove').disabled = false;
+        document.getElementById('btn-new').disabled = false;
+      }, 900);
+    }
+  }
+
+  setTimeout(tick, 120);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+</script>
+</body>
+</html>

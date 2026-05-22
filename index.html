@@ -344,9 +344,7 @@
 
 <!-- ── Game screen ── -->
 <div id="game-screen">
-  <div class="top-bar">
-    <button class="btn btn-new" id="btn-new" onclick="generateCard()">New Card</button>
-  </div>
+  <div class="top-bar"></div>
 
   <div class="bingo-card">
     <div class="bingo-header">
@@ -361,6 +359,9 @@
 
   <div class="bottom-bar">
     <button class="btn btn-remove" id="btn-remove" onclick="startRemove()">Remove 1 Item</button>
+  </div>
+  <div style="margin-top: 100px;">
+    <button class="btn btn-new" id="btn-new" onclick="generateCard()">New Card</button>
   </div>
 </div>
 
@@ -644,15 +645,8 @@ function startRemove() {
     return;
   }
 
-  if (pool.length === 1) {
-    pool[0].classList.add('lottery-winner');
-    setTimeout(() => {
-      pool[0].classList.remove('lottery-winner', 'completed');
-    }, 800);
-    return;
-  }
-
   animating = true;
+  document.querySelectorAll('.cell.bingo-line').forEach(c => c.classList.remove('bingo-line'));
   document.getElementById('btn-remove').disabled = true;
   document.getElementById('btn-new').disabled = true;
 
